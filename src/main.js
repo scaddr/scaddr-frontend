@@ -12,6 +12,6 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(process.env.BASE_URL),
     routes,
-});
+})
 
-createApp(App).use(router).mount("#app");
+createApp(App).use(router).mount("#app")
