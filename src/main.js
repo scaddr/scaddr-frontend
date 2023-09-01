@@ -6,7 +6,7 @@ import LobbyComponent from "./components/LobbyComponent.vue"
 
 const routes = [
     { path: "/", component: HomepageComponent},
-    { path: "/lobby", component: LobbyComponent},
+    { path: "/room/:roomId", component: LobbyComponent}
 ]
 
 const router = createRouter({

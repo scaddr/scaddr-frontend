@@ -5,7 +5,6 @@
     <div :class="[wallpaperDefaultClasses, verticallyCenterClasses]">
         <div class="text-white text-center bg-black bg-opacity-95 rounded-lg w-fit px-32 py-10 hover:bg-opacity-100 transition shadow-black shadow-xl box-border">
             <h1 class="text-white text-4xl m-auto mb-10">scaddr</h1>
-
             <div class="relative h-10 w-full min-w-[200px]">
                 <input
                     class="peer h-full w-full rounded-[7px] border border-blue-gray-200 bg-transparent px-3 py-2.5 text-sm text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 focus:border focus:border-blue-500 focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50"
@@ -66,40 +65,6 @@ const onCardsPicked = (event) => {
     fileReader.readAsText(files[0]);
 }
 
-const createPrivateRoom = async () => {
-    if (username.value == "") {
-        alert("Please enter a valid username value")
-        return
-    }
-
-    if (cardsFile.value == null) {
-        alert("Please select a flashcards file")
-        return
-    }
-
-    const requestBody = {
-        username: username.value,
-        cardsFile: cardsFile.value
-    }  
-
-    try {
-        const response = await fetch(`${config["backendUrl"]}/createRoom`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(requestBody)
-        })
-
-        const jsonResponse = await response.json();
-
-        console.warn(jsonResponse);
-    } catch (error) {
-        // alert("Server connection error. Please contact the server admin.")
-        console.log(error)
-    }
-}
-
 export default {
     setup() {
         const wallpaperDefaultClasses = ref("w-screen h-screen bg-center bg-no-repeat")
@@ -113,10 +78,47 @@ export default {
             username,
         }
     },
-    data() {
-        return {
-            onCardsPicked,
-            createPrivateRoom
+    methods: {
+        onCardsPicked,
+        async createPrivateRoom () {
+            console.error("test -> " + this.$test)
+            if (username.value == "") {
+                alert("Please enter a valid username value")
+                return
+            }
+
+            if (cardsFile.value == null) {
+                alert("Please select a flashcards file")
+                return
+            }
+
+            const requestBody = {
+                username: username.value,
+                cardsFile: cardsFile.value
+            }  
+
+            try {
+                const response = await fetch(`${config["backendUrl"]}/createRoom`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(requestBody)
+                })
+
+                const jsonResponse = await response.json()
+                sessionStorage.setItem("user", JSON.stringify(jsonResponse))
+
+                const roomId = jsonResponse["newRoomId"] ?? ""
+                if (roomId.trim() === "") {
+                    throw new Error("Room ID not received from the server")
+                }
+
+                this.$router.push(`/room/${roomId}`)
+                
+            } catch (error) {
+                alert("Server connection error. Please contact the server admin.")
+            }
         }
     },
     name: "HomepageComponent"
