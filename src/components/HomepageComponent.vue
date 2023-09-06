@@ -2,7 +2,7 @@
 </script>
 
 <template>
-    <div :class="[wallpaperDefaultClasses, verticallyCenterClasses]">
+    <div class="w-screen bg-center bg-no-repeat h-screen flex items-center justify-center">
         <div class="text-white text-center bg-black bg-opacity-95 rounded-lg w-fit px-32 py-10 hover:bg-opacity-100 transition shadow-black shadow-xl box-border">
             <h1 class="text-white text-4xl m-auto mb-10">scaddr</h1>
             <div class="relative h-10 w-full min-w-[200px]">
@@ -43,7 +43,8 @@
 
 <script>
 import { ref } from 'vue'
-import { config } from "../settings/config.js"
+// import { config } from "@/settings/config.js"
+import { socket } from '@/settings/socket' 
 
 const cardsFile = ref(null)
 const username = ref("")
@@ -81,7 +82,6 @@ export default {
     methods: {
         onCardsPicked,
         async createPrivateRoom () {
-            console.error("test -> " + this.$test)
             if (username.value == "") {
                 alert("Please enter a valid username value")
                 return
@@ -98,24 +98,21 @@ export default {
             }  
 
             try {
-                const response = await fetch(`${config["backendUrl"]}/createRoom`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(requestBody)
+                socket.connect()
+                socket.emit("createRoom", requestBody, (response) => {
+                    if (response["status"] !== "ok") {
+                        alert("Failed creating the room")
+                        return
+                    }
+
+                    const roomId = response["roomId"] ?? ""
+                    if (roomId.trim() === "") {
+                        throw new Error("Room ID not received from the server")
+                    }
+
+                    sessionStorage.setItem("user", JSON.stringify(response))
+                    this.$router.push(`/room/${roomId}`)
                 })
-
-                const jsonResponse = await response.json()
-                sessionStorage.setItem("user", JSON.stringify(jsonResponse))
-
-                const roomId = jsonResponse["newRoomId"] ?? ""
-                if (roomId.trim() === "") {
-                    throw new Error("Room ID not received from the server")
-                }
-
-                this.$router.push(`/room/${roomId}`)
-                
             } catch (error) {
                 alert("Server connection error. Please contact the server admin.")
             }
