@@ -10,6 +10,7 @@ export const socketState = reactive({
     lobbyEvents: [],
     gameEvents: [],
     userEvents: [],
+    joinedUsers: []
 })
 export const socket = io(backendUrl)
 
@@ -25,8 +26,13 @@ socket.on("lobby/messageEvent", (data) => {
     socketState.lobbyEvents.push(data)
 })
 
-socket.on("userEvent", (data) => {
-    socketState.userEvents.push(data)
+socket.on("joinedUsers", (data) => {
+    if (data["status"] !== "ok") {
+        alert("Failed fetching users")
+        return
+    }
+
+    socketState.joinedUsers = data["users"]
 })
 
 socket.on("roomStateEvent", (data) => {

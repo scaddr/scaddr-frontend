@@ -1,6 +1,20 @@
 <template>
     <div v-if="loggedIn">
-        <h1>Hello there, I'm logged in</h1>
+        <div class="w-screen bg-center bg-no-repeat h-screen flex items-center justify-center">
+            <div class="grid grid-cols-3 gap-4 text-white text-center bg-opacity-95 rounded-lg w-fit hover:bg-opacity-100 transition shadow-black">
+                <div class="col-span-1 px-16 py-32 bg-black rounded-lg shadow-xl">
+                    <h1>Joined users:</h1>
+                    <ul>
+                        <li v-for="user in events.joinedUsers" :key="user">
+                            {{user}}
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-span-2 px-16 py-32 bg-black rounded-lg shadow-xl">
+                    <p>test</p>
+                </div>
+            </div>
+        </div>
     </div>
     <div v-else>
         <div class="w-screen bg-center bg-no-repeat h-screen flex items-center justify-center">
@@ -49,7 +63,6 @@ const loggedIn = ref(false)
 const roomId = ref("")
 const username = ref("")
 
-
 export default {
     name: "LobbyComponent",
     setup() {
@@ -60,7 +73,8 @@ export default {
         return {
             roomId,
             loggedIn,
-            username
+            username,
+            events: socketState
         }
     },
     methods: {
