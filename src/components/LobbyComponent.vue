@@ -3,15 +3,22 @@
         <div class="w-screen bg-center bg-no-repeat h-screen flex items-center justify-center">
             <div class="grid grid-cols-3 gap-4 text-white text-center bg-opacity-95 rounded-lg w-fit hover:bg-opacity-100 transition shadow-black">
                 <div class="col-span-1 px-16 py-32 bg-black rounded-lg shadow-xl">
-                    <h1>Joined users:</h1>
-                    <ul>
-                        <li v-for="user in events.joinedUsers" :key="user">
+                    <h1>Participants:</h1>
+                    <ul class="w-48 text-sm font-medium text-white mt-2 select-none">
+                        <li v-for="user in events.joinedUsers" :key="user" class="my-1 w-full px-2 py-1 bg-transparent border border-white opacity-75 transition hover:opacity-100 rounded">
                             {{user}}
                         </li>
                     </ul>
                 </div>
                 <div class="col-span-2 px-16 py-32 bg-black rounded-lg shadow-xl">
-                    <p>test</p>
+                    <div v-if="isLeader">
+                        <p>Currently, you're the leader of the lobby</p>
+                        <button @click="startGame" class="w-fit mt-2 cursor-pointer border border-blue-500 px-3 py-2.5 rounded-[7px] text-blue-500 bg-transparent text-sm opacity-75 hover:opacity-100 transition">Start the Game</button>
+                    </div>
+                    <div v-else>
+                        <p>You're a participant of this game.</p>
+                        <p>Please wait for the room leader to start the game</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -60,6 +67,7 @@ import { socketState, socket } from "@/settings/socket"
 import { initFlowbite } from "flowbite"
 
 const loggedIn = ref(false)
+const isLeader = ref(false)
 const roomId = ref("")
 const username = ref("")
 
@@ -73,6 +81,7 @@ export default {
         return {
             roomId,
             loggedIn,
+            isLeader,
             username,
             events: socketState
         }
@@ -104,10 +113,13 @@ export default {
 
             socket.emit("userVerify", (requestBody), (response) => {
                 if (response["status"] !== "ok") {
-                    alert("Username verification failed, logging out")
                     sessionStorage.removeItem("user")
-                    this.$router.go()
+                    this.$router.push("/")
                     return
+                }
+
+                if (response["userRole"] === "leader") {
+                    isLeader.value = true;
                 }
 
                 loggedIn.value = true
