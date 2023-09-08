@@ -6,11 +6,10 @@ const backendUrl = (scaddrEnvironment ?? "DEV") == "DEV" ? "http://localhost:300
 
 export const socketState = reactive({
     connected: false,
-    generalEvents: [],
-    lobbyEvents: [],
+    roomStatus: "",
     gameEvents: [],
-    userEvents: [],
-    joinedUsers: []
+    joinedUsers: [],
+    leader: ""
 })
 export const socket = io(backendUrl)
 
@@ -22,20 +21,22 @@ socket.on("disconnect", () => {
     socketState.connected = false;
 })
 
-socket.on("lobby/messageEvent", (data) => {
-    socketState.lobbyEvents.push(data)
-})
-
 socket.on("joinedUsers", (data) => {
     if (data["status"] !== "ok") {
         alert("Failed fetching users")
         return
     }
 
+    socketState.leader = data["leader"]
     socketState.joinedUsers = data["users"]
 })
 
-socket.on("roomStateEvent", (data) => {
-    socketState.generalEvents.push(data)
+socket.on("gameStatus", (data) => {
+    if (data["status"] !== "ok") {
+        alert("Failed fetching game status")
+        return
+    }
+
+    socketState.roomStatus = data["roomStatus"]
 })
 

@@ -4,8 +4,8 @@
             <div class="grid grid-cols-3 gap-4 text-white text-center bg-opacity-95 rounded-lg w-fit hover:bg-opacity-100 transition shadow-black">
                 <div class="col-span-1 px-16 py-32 bg-black rounded-lg shadow-xl">
                     <h1>Participants:</h1>
-                    <ul class="w-48 text-sm font-medium text-white mt-2 select-none">
-                        <li v-for="user in events.joinedUsers" :key="user" class="my-1 w-full px-2 py-1 bg-transparent border border-white opacity-75 transition hover:opacity-100 rounded">
+                    <ul class="w-48 text-sm font-medium mt-2 select-none">
+                        <li v-for="user in events.joinedUsers" :key="user" class="my-1 w-full px-2 py-1 bg-transparent border opacity-75 transition hover:opacity-100 rounded" :class="[user === events.leader ? 'border-blue-500 text-blue-500' : 'border-white text-white']">
                             {{user}}
                         </li>
                     </ul>
@@ -61,15 +61,46 @@
 </template>
 
 <script>
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import { useRoute } from "vue-router"
 import { socketState, socket } from "@/settings/socket"
 import { initFlowbite } from "flowbite"
 
 const loggedIn = ref(false)
-const isLeader = ref(false)
 const roomId = ref("")
 const username = ref("")
+
+const sessionStorageVerify = (storageKey) => {
+    let storage = sessionStorage.getItem(storageKey)
+
+    if (storage === null) {
+        return false
+    } 
+
+    storage = JSON.parse(storage)
+
+    if (storage["roomId"] !== roomId.value) {
+        sessionStorage.removeItem("user")
+        this.$router.go()
+        return false
+    }
+
+    return storage
+}
+
+const isLeader = computed({
+    get() {
+        // get username 
+        const userCredentials = sessionStorageVerify("user")
+
+        if (!userCredentials) {
+            return
+        }
+        
+        const username = userCredentials.username 
+        return username === socketState.leader
+    }
+})
 
 export default {
     name: "LobbyComponent",
@@ -88,17 +119,9 @@ export default {
     },
     methods: {
         checkCredentials () {
-            let userCredentials = sessionStorage.getItem("user")
-            
-            if (userCredentials === null) {
-                return;
-            }
+            const userCredentials = sessionStorageVerify("user")
 
-            userCredentials = JSON.parse(userCredentials)
-
-            if (userCredentials["roomId"] !== roomId.value) {
-                sessionStorage.removeItem("user")
-                this.$router.go()
+            if (!userCredentials) {
                 return
             }
 
@@ -116,10 +139,6 @@ export default {
                     sessionStorage.removeItem("user")
                     this.$router.push("/")
                     return
-                }
-
-                if (response["userRole"] === "leader") {
-                    isLeader.value = true;
                 }
 
                 loggedIn.value = true
@@ -154,6 +173,31 @@ export default {
             } catch (error) {
                 alert("Server connection error. Please contact the server admin.")
             } 
+        },
+        async startGame () {
+            const userCredentials = sessionStorageVerify("user")
+
+            if (!userCredentials) {
+                return
+            }
+
+            const requestBody = {
+                roomId: roomId.value,
+                username: userCredentials?.username ?? "", 
+                usernameHash: userCredentials?.usernameHash ?? ""
+            }
+
+            try {
+                socket.emit("startGame", requestBody, (response) => {
+                    if (response["status"] !== "ok") {
+                        console.log(response["reason"])
+                        alert("Failed starting room")
+                        return
+                    }
+                })
+            } catch (e) {
+                alert("Server connection error. Please contact the server admin") 
+            }
         }
     },
     beforeMount() {
