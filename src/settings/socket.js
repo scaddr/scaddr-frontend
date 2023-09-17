@@ -47,5 +47,6 @@ socket.on("pokeQuestion", (data) => {
         return
     }
 
+    console.log("Updating data with -> " + JSON.stringify(data))
     socketState.question = data
 })
