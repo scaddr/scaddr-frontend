@@ -1,25 +1,10 @@
 <template>
     <div v-if="loggedIn">
         <div class="w-screen bg-center bg-no-repeat h-screen flex items-center justify-center">
-            <div class="grid grid-cols-3 gap-4 text-white text-center bg-opacity-95 rounded-lg w-fit hover:bg-opacity-100 transition shadow-black">
-                <div class="col-span-1 px-16 py-32 bg-black rounded-lg shadow-xl">
-                    <h1>Participants:</h1>
-                    <ul class="w-48 text-sm font-medium mt-2 select-none">
-                        <li v-for="user in events.joinedUsers" :key="user" class="my-1 w-full px-2 py-1 bg-transparent border opacity-75 transition hover:opacity-100 rounded" :class="[user === events.leader ? 'border-blue-500 text-blue-500' : 'border-white text-white']">
-                            {{user}}
-                        </li>
-                    </ul>
-                </div>
-                <div class="col-span-2 px-16 py-32 bg-black rounded-lg shadow-xl">
-                    <div v-if="isLeader">
-                        <p>Currently, you're the leader of the lobby</p>
-                        <button @click="startGame" class="w-fit mt-2 cursor-pointer border border-blue-500 px-3 py-2.5 rounded-[7px] text-blue-500 bg-transparent text-sm opacity-75 hover:opacity-100 transition">Start the Game</button>
-                    </div>
-                    <div v-else>
-                        <p>You're a participant of this game.</p>
-                        <p>Please wait for the room leader to start the game</p>
-                    </div>
-                </div>
+            <GameMainView v-if="events.roomStatus == 'game'" />
+            <LobbyMainView v-else-if="events.roomStatus == 'lobby'" />
+            <div v-else class="col-span-2 px-16 py-32 bg-black rounded-lg shadow-xl">
+                <p>Patiently waiting for room status change</p>
             </div>
         </div>
     </div>
@@ -31,7 +16,7 @@
                     hover:opacity-90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center 
                     cursor-pointer border border-white mb-2">View Room ID</p>
                 <div id="tooltip-light" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 tooltip">
-                    {{roomId}}
+                    {{getRoomId}}
                     <div class="tooltip-arrow" data-popper-arrow></div>
                 </div>
                 <div class="relative h-10 w-full min-w-[200px] mb-2">
@@ -64,58 +49,41 @@
 import { ref, computed } from "vue"
 import { useRoute } from "vue-router"
 import { socketState, socket } from "@/settings/socket"
+import { sessionStorageVerify } from "@/components/functions/storage"
 import { initFlowbite } from "flowbite"
 
+import LobbyMainView from "@/components/MainViews/LobbyMainView.vue"
+import GameMainView from "@/components/MainViews/GameMainView.vue"
+
 const loggedIn = ref(false)
-const roomId = ref("")
 const username = ref("")
 
-const sessionStorageVerify = (storageKey) => {
-    let storage = sessionStorage.getItem(storageKey)
-
-    if (storage === null) {
-        return false
-    } 
-
-    storage = JSON.parse(storage)
-
-    if (storage["roomId"] !== roomId.value) {
-        sessionStorage.removeItem("user")
-        this.$router.go()
-        return false
-    }
-
-    return storage
-}
-
-const isLeader = computed({
+const getRoomId = computed({
     get() {
-        // get username 
         const userCredentials = sessionStorageVerify("user")
 
         if (!userCredentials) {
-            return
+            return 
         }
-        
-        const username = userCredentials.username 
-        return username === socketState.leader
+
+        return userCredentials?.roomId
     }
 })
 
 export default {
     name: "LobbyComponent",
     setup() {
-        const route = useRoute()
-
-        roomId.value = route.params.roomId
 
         return {
-            roomId,
+            getRoomId,
             loggedIn,
-            isLeader,
             username,
             events: socketState
         }
+    },
+    components: {
+        LobbyMainView,
+        GameMainView 
     },
     methods: {
         checkCredentials () {
@@ -125,11 +93,16 @@ export default {
                 return
             }
 
+            const roomId = userCredentials?.roomId ?? ""
             const username = userCredentials?.username ?? ""
             const usernameHash = userCredentials?.usernameHash ?? ""
 
+            if (username === "" || usernameHash === "") {
+                return
+            }
+
             const requestBody = {
-                roomId: roomId.value,
+                roomId,
                 username,
                 usernameHash
             }
@@ -137,14 +110,17 @@ export default {
             socket.emit("userVerify", (requestBody), (response) => {
                 if (response["status"] !== "ok") {
                     sessionStorage.removeItem("user")
-                    this.$router.push("/")
+                    this.$router.go()
                     return
                 }
 
                 loggedIn.value = true
             })
         },
-        async joinPrivateRoom () {
+        joinPrivateRoom () {
+            const userCredentials = sessionStorageVerify("user")
+            console.error(userCredentials)
+
             if (username.value == "") {
                 alert("Please enter a valid username value")
                 return
@@ -152,7 +128,7 @@ export default {
 
             const requestBody = {
                 username: username.value, 
-                roomId: roomId.value 
+                roomId: userCredentials?.roomId ?? ""
             }
 
             try {
@@ -162,8 +138,8 @@ export default {
                         return
                     }
 
-                    const roomId = response["roomId"] ?? ""
-                    if (roomId.trim() === "") {
+                    const receivedRoomId = response["roomId"] ?? ""
+                    if (receivedRoomId.trim() === "") {
                         throw new Error("Room ID not received from the server")
                     }
                     
@@ -174,7 +150,7 @@ export default {
                 alert("Server connection error. Please contact the server admin.")
             } 
         },
-        async startGame () {
+        startGame () {
             const userCredentials = sessionStorageVerify("user")
 
             if (!userCredentials) {
@@ -182,7 +158,7 @@ export default {
             }
 
             const requestBody = {
-                roomId: roomId.value,
+                roomId: userCredentials?.roomId ?? "",
                 username: userCredentials?.username ?? "", 
                 usernameHash: userCredentials?.usernameHash ?? ""
             }
@@ -204,6 +180,13 @@ export default {
         if (!socketState.connected) {
             socket.connect()
         }
+
+        const route = useRoute()
+        let userCredentials = JSON.parse(sessionStorage.getItem("user") ?? "{}")
+        userCredentials.roomId = route.params.roomId
+
+        sessionStorage.setItem("user", JSON.stringify(userCredentials))
+        console.warn(JSON.parse(sessionStorage.getItem("user")))
 
         this.checkCredentials()
     },

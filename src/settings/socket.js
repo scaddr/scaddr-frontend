@@ -9,6 +9,7 @@ export const socketState = reactive({
     roomStatus: "",
     gameEvents: [],
     joinedUsers: [],
+    question: {},
     leader: ""
 })
 export const socket = io(backendUrl)
@@ -40,3 +41,11 @@ socket.on("gameStatus", (data) => {
     socketState.roomStatus = data["roomStatus"]
 })
 
+socket.on("pokeQuestion", (data) => {
+    if (data["status"] !== "ok") {
+        alert("Failed fetching question")
+        return
+    }
+
+    socketState.question = data
+})
