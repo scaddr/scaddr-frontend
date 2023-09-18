@@ -10,8 +10,10 @@ export const socketState = reactive({
     gameEvents: [],
     joinedUsers: [],
     question: {},
-    leader: ""
+    validation: {},
+    leader: "",
 })
+
 export const socket = io(backendUrl)
 
 socket.on("connect", () => {
@@ -47,6 +49,15 @@ socket.on("pokeQuestion", (data) => {
         return
     }
 
-    console.log("Updating data with -> " + JSON.stringify(data))
+    socketState.validation = {}
     socketState.question = data
+})
+
+socket.on("choiceValidation", (data) => {
+    if (data["status"] !== "ok") {
+        alert("Failed fetching choice validation")
+        return
+    }
+
+    socketState.validation = data 
 })

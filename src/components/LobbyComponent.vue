@@ -119,7 +119,6 @@ export default {
         },
         joinPrivateRoom () {
             const userCredentials = sessionStorageVerify("user")
-            console.error(userCredentials)
 
             if (username.value == "") {
                 alert("Please enter a valid username value")
@@ -166,7 +165,6 @@ export default {
             try {
                 socket.emit("startGame", requestBody, (response) => {
                     if (response["status"] !== "ok") {
-                        console.log(response["reason"])
                         alert("Failed starting room")
                         return
                     }
@@ -186,7 +184,6 @@ export default {
         userCredentials.roomId = route.params.roomId
 
         sessionStorage.setItem("user", JSON.stringify(userCredentials))
-        console.warn(JSON.parse(sessionStorage.getItem("user")))
 
         this.checkCredentials()
     },

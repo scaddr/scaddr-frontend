@@ -8,10 +8,21 @@
             </div>
             <div class="h-full flex items-center justify-center">
                 <div class="">
-                    <p :class="['text-5xl m-auto w-fit p-5 rounded-lg', isInterrogated ? 'bg-white text-black' : 'bg-blue-600 text-white']">{{events.question?.question}}</p>
-                    <div class="grid grid-cols-3 gap-3 mt-10">
+                    <p :class="['select-none text-5xl m-auto w-fit p-5 rounded-lg', isInterrogated ? 'bg-white text-black' : 'bg-blue-600 text-white']">{{events.question?.question}}</p>
+
+                    <div class="grid grid-cols-3 gap-3 mt-10" v-if="events.validation?.result == 'correct'">
                         <div v-for="choice in events.question?.possibleAnswers" :key="choice" class="col-span-1">
-                            <p :class="['m-auto bg-none border border-white p-2 rounded-lg text-white', isInterrogated ? 'cursor-pointer hover:bg-white hover:text-black transition' : '']">{{choice}}</p>
+                            <p @click="isInterrogated ? sendAnswer(choice) : undefined" class="m-auto select-none bg-none border border-white p-2 rounded-lg text-white" :class="{'cursor-pointer hover:bg-white hover:text-black transition': isInterrogated, correctChoice: choice == events.validation?.userChoice}">{{choice}}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mt-10" v-else-if="events.validation?.result == 'wrong'"> 
+                        <div v-for="choice in events.question?.possibleAnswers" :key="choice" class="col-span-1">
+                            <p @click="isInterrogated ? sendAnswer(choice) : undefined" class="m-auto select-none bg-none border border-white p-2 rounded-lg text-white" :class="{'cursor-pointer hover:bg-white hover:text-black transition': isInterrogated, correctChoice: choice == events.validation?.correctAnswer, wrongChoice: choice == events.validation?.userChoice}">{{choice}}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mt-10" v-else>
+                        <div v-for="choice in events.question?.possibleAnswers" :key="choice" class="col-span-1">
+                            <p @click="isInterrogated ? sendAnswer(choice) : undefined" class="m-auto select-none bg-none border border-white p-2 rounded-lg text-white" :class="{'cursor-pointer hover:bg-white hover:text-black transition': isInterrogated}">{{choice}}</p>
                         </div>
                     </div>
                 </div>
@@ -20,9 +31,38 @@
     </div>
 </template>
 
+<style>
+
+.correctChoice {
+    animation: correctChoiceAnimation 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes correctChoiceAnimation {
+    100% {
+        background: #15803d;
+        color: white; 
+        border-color: #15803d;
+    }
+}
+
+.wrongChoice {
+    animation: wrongChoiceAnimation 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes wrongChoiceAnimation {
+    100% {
+        background: #b91c1c; 
+        color: white; 
+        border-color: #b91c1c;
+    }
+}
+
+</style>
+
 <script>
-import { socketState } from '@/settings/socket';
+import { socketState, socket } from '@/settings/socket';
 import { isInterrogated } from '@/components/getters/GameGetters.js'
+import { sessionStorageVerify } from '../functions/storage';
 import GameMenu from '@/components/Menus/GameMenu.vue';
 
 export default {
@@ -35,6 +75,33 @@ export default {
     },
     components: {
         GameMenu
+    }, 
+    methods: {
+        sendAnswer(userChoice) {
+            const userCredentials = sessionStorageVerify("user")
+
+            if (!userCredentials) {
+                return
+            }
+
+            const requestBody = {
+                roomId: userCredentials?.roomId ?? "",
+                username: userCredentials?.username ?? "",
+                usernameHash: userCredentials?.usernameHash ?? "",
+                userChoice
+            }
+
+            socket.emit("pokeAnswer", requestBody)
+        },
+        displayChoice(choice) {
+            if (choice === socketState.validation?.correctAnswer) {
+                return "bg-green-400 border border-green-400 text-white"
+            }
+            if (choice === socketState.validation?.wrongAnswer) {
+                return "bg-red-400 border border-red-400 text-white"
+            }
+            return "bg-none text-white"
+        }
     }
 }
 </script>
