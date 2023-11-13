@@ -5,7 +5,7 @@
             <!-- top bar -->
             <div class="border-b-white border border-t-0 border-l-0 border-r-0 rounded-t-lg text-left p-2">
                 <h1>Interrogating: {{events.question?.user ?? "Nobody"}}</h1>
-                <!--<h1>Round: {{events.roomStatus["currentRound"]}}</h1>-->
+                <h1>Round: {{events.roomStatus["currentRound"]}}</h1>
             </div>
             <div class="mt-10 pb-10">
                 <p :class="['select-none text-5xl m-auto mt-10 w-fit p-5 rounded-lg', isInterrogated ? 'bg-white text-black' : 'bg-blue-600 text-white']">{{events.question?.question}}</p>

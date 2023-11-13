@@ -3,6 +3,7 @@
         <div class="w-screen bg-center bg-no-repeat h-screen flex items-center justify-center">
             <GameMainView v-if="events.roomStatus['state'] == 'game'" />
             <LobbyMainView v-else-if="events.roomStatus['state'] == 'lobby'" />
+            <FinishedMainView v-else-if="events.roomStatus['state'] == 'finished'" />
             <div v-else class="col-span-2 px-16 py-32 bg-black rounded-lg shadow-xl">
                 <p>Patiently waiting for room status change</p>
             </div>
@@ -54,6 +55,7 @@ import { initFlowbite } from "flowbite"
 
 import LobbyMainView from "@/components/MainViews/LobbyMainView.vue"
 import GameMainView from "@/components/MainViews/GameMainView.vue"
+import FinishedMainView from "@/components/MainViews/FinishedMainView.vue"
 
 const loggedIn = ref(false)
 const username = ref("")
@@ -83,7 +85,8 @@ export default {
     },
     components: {
         LobbyMainView,
-        GameMainView 
+        GameMainView,
+        FinishedMainView
     },
     methods: {
         checkCredentials () {
