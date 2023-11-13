@@ -1,8 +1,8 @@
 <template>
     <div v-if="loggedIn">
         <div class="w-screen bg-center bg-no-repeat h-screen flex items-center justify-center">
-            <GameMainView v-if="events.roomStatus == 'game'" />
-            <LobbyMainView v-else-if="events.roomStatus == 'lobby'" />
+            <GameMainView v-if="events.roomStatus['state'] == 'game'" />
+            <LobbyMainView v-else-if="events.roomStatus['state'] == 'lobby'" />
             <div v-else class="col-span-2 px-16 py-32 bg-black rounded-lg shadow-xl">
                 <p>Patiently waiting for room status change</p>
             </div>

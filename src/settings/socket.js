@@ -6,7 +6,7 @@ const backendUrl = (scaddrEnvironment ?? "DEV") == "DEV" ? "http://localhost:300
 
 export const socketState = reactive({
     connected: false,
-    roomStatus: "",
+    roomStatus: {},
     gameEvents: [],
     joinedUsers: [],
     question: {},

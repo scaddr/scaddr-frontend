@@ -5,23 +5,42 @@
             <!-- top bar -->
             <div class="border-b-white border border-t-0 border-l-0 border-r-0 rounded-t-lg text-left p-2">
                 <h1>Interrogating: {{events.question?.user ?? "Nobody"}}</h1>
+                <!--<h1>Round: {{events.roomStatus["currentRound"]}}</h1>-->
             </div>
             <div class="mt-10 pb-10">
                 <p :class="['select-none text-5xl m-auto mt-10 w-fit p-5 rounded-lg', isInterrogated ? 'bg-white text-black' : 'bg-blue-600 text-white']">{{events.question?.question}}</p>
 
+                <!-- if the user got the question right --> 
                 <div class="grid grid-rows-3 gap-3 mt-10" v-if="events.validation?.result == 'correct'">
                     <div v-for="choice in events.question?.possibleAnswers" :key="choice" class="col-span-1">
-                        <p @click="isInterrogated ? sendAnswer(choice) : undefined" class="m-auto w-fit min-w-[200px] select-none bg-none border border-white p-2 rounded-lg text-white" :class="{'cursor-pointer hover:bg-white hover:text-black transition': isInterrogated, correctChoice: choice == events.validation?.userChoice}">{{choice}}</p>
+                        <p class="m-auto w-fit min-w-[200px] select-none bg-none border border-white p-2 rounded-lg text-white" 
+                            :class="{'cursor-pointer hover:bg-white hover:text-black transition': isInterrogated, 
+                                correctChoice: choice == events.validation?.userChoice,
+                                noChoose: choice != events.validation?.correctAnswer && choice != events.validation?.userChoice
+                            }"
+                        >{{choice}}</p>
                     </div>
                 </div>
+                <!-- if the user got the question wrong --> 
                 <div class="grid grid-rows-3 gap-3 mt-10" v-else-if="events.validation?.result == 'wrong'"> 
                     <div v-for="choice in events.question?.possibleAnswers" :key="choice" class="col-span-1">
-                        <p @click="isInterrogated ? sendAnswer(choice) : undefined" class="m-auto w-fit min-w-[200px] select-none bg-none border border-white p-2 rounded-lg text-white" :class="{'cursor-pointer hover:bg-white hover:text-black transition': isInterrogated, correctChoice: choice == events.validation?.correctAnswer, wrongChoice: choice == events.validation?.userChoice}">{{choice}}</p>
+                        <p class="m-auto w-fit min-w-[200px] select-none bg-none border border-white p-2 rounded-lg text-white" 
+                            :class="{'cursor-pointer hover:bg-white hover:text-black transition': isInterrogated, 
+                                correctChoice: choice == events.validation?.correctAnswer, 
+                                wrongChoice: choice == events.validation?.userChoice,
+                                noChoose: (choice != events.validation?.correctAnswer && choice != events.validation?.userChoice)
+
+                            }"
+                        >{{choice}}</p>
                     </div>
                 </div>
+                <!-- if the user hasn't answered to the question yet --> 
                 <div class="grid grid-rows-3 gap-3 mt-10" v-else>
                     <div v-for="choice in events.question?.possibleAnswers" :key="choice" class="col-span-1">
-                        <p @click="isInterrogated ? sendAnswer(choice) : undefined" class="m-auto w-fit min-w-[200px] select-none bg-none border border-white p-2 rounded-lg text-white" :class="{'cursor-pointer hover:bg-white hover:text-black transition': isInterrogated}">{{choice}}</p>
+                        <p @click="isInterrogated ? sendAnswer(choice) : undefined" 
+                            class="m-auto w-fit min-w-[200px] select-none bg-none border border-white p-2 rounded-lg text-white" 
+                            :class="{'cursor-pointer hover:bg-white hover:text-black transition': isInterrogated}"
+                        >{{choice}}</p>
                     </div>
                 </div>
             </div>
@@ -32,7 +51,7 @@
 <style>
 
 .correctChoice {
-    animation: correctChoiceAnimation 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    animation: correctChoiceAnimation 0.40s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 @keyframes correctChoiceAnimation {
@@ -44,7 +63,7 @@
 }
 
 .wrongChoice {
-    animation: wrongChoiceAnimation 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    animation: wrongChoiceAnimation 0.40s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 @keyframes wrongChoiceAnimation {
@@ -55,6 +74,18 @@
     }
 }
 
+.noChoose {
+    animation: noChooseAnimation 0.40s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    cursor: pointer !important;
+    pointer-events: none;
+}
+
+@keyframes  noChooseAnimation {
+    100% {
+        opacity: .7;
+    }
+}
+
 </style>
 
 <script>
@@ -62,6 +93,9 @@ import { socketState, socket } from '@/settings/socket';
 import { isInterrogated } from '@/components/getters/GameGetters.js'
 import { sessionStorageVerify } from '../functions/storage';
 import GameMenu from '@/components/Menus/GameMenu.vue';
+
+import correctSound from '@/assets/sfx/correct-01.mp3'
+import wrongSound from '@/assets/sfx/failure-01.wav'
 
 export default {
     name: "GameMainView",
@@ -90,15 +124,21 @@ export default {
             }
 
             socket.emit("pokeAnswer", requestBody)
-        },
-        displayChoice(choice) {
-            if (choice === socketState.validation?.correctAnswer) {
-                return "bg-green-400 border border-green-400 text-white"
+        }
+    },
+    watch: {
+        "events.validation.result": function(val) {
+            if (val == "correct") {
+                const audio = new Audio(correctSound);
+                audio.play()
+                return
             }
-            if (choice === socketState.validation?.wrongAnswer) {
-                return "bg-red-400 border border-red-400 text-white"
+
+            if (val == "wrong") {
+                const audio = new Audio(wrongSound)
+                audio.play()
+                return
             }
-            return "bg-none text-white"
         }
     }
 }

@@ -16,6 +16,7 @@ Goals and features:
    - [x] Animate Answers
    - [ ] Show Score from Backend
    - [ ] Ending screen for each round
+ - [ ] Coop Mode 
  - [ ] Suggestions? See you in discussions
 
 ## Building
